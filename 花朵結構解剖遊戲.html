@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>花朵结构解剖游戏</title>
+<style>
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+font-family: 'Comic Sans MS', '微软雅黑', sans-serif;
+}
+
+body {
+background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 20px;
+}
+
+.container {
+max-width: 1000px;
+width: 100%;
+text-align: center;
+}
+
+h1 {
+color: #ff6f00;
+margin: 20px 0;
+text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+font-size: 2.5rem;
+}
+
+.instructions {
+background-color: #fff9c4;
+border-radius: 15px;
+padding: 15px;
+margin: 15px 0;
+box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+border: 2px dashed #ffd54f;
+}
+
+.instructions h2 {
+color: #ff8f00;
+margin-bottom: 10px;
+}
+
+.instructions p {
+color: #5d4037;
+font-size: 1.1rem;
+line-height: 1.5;
+}
+
+.game-area {
+display: flex;
+flex-wrap: wrap;
+justify-content: space-between;
+margin-top: 20px;
+gap: 20px;
+}
+
+.flower-container {
+flex: 1;
+min-width: 300px;
+background-color: white;
+border-radius: 15px;
+padding: 15px;
+box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.flower-image {
+width: 100%;
+height: 300px;
+background-color: #f5f5f5;
+border-radius: 10px;
+display: flex;
+justify-content: center;
+align-items: center;
+margin-bottom: 15px;
+position: relative;
+overflow: hidden;
+border: 2px solid #e0e0e0;
+}
+
+.flower-part {
+position: absolute;
+cursor: grab;
+transition: transform 0.2s;
+z-index: 10;
+}
+
+/* 新增：所有设备都禁止图片选中和拖拽 */
+.flower-part img {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.flower-part:hover {
+transform: scale(1.05);
+}
+
+.flower-part.dragging {
+opacity: 0.7;
+cursor: grabbing;
+}
+
+.target-container {
+flex: 1;
+min-width: 300px;
+background-color: white;
+border-radius: 15px;
+padding: 15px;
+box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.target-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 15px;
+margin-top: 10px;
+}
+
+.target-cell {
+height: 120px;
+border: 2px dashed #bdbdbd;
+border-radius: 10px;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+transition: all 0.3s;
+background-color: #f9f9f9;
+}
+
+.target-cell.correct {
+border-color: #4caf50;
+background-color: #e8f5e9;
+}
+
+.target-cell h3 {
+color: #424242;
+margin-bottom: 10px;
+}
+
+.buttons {
+margin: 30px 0;
+}
+
+button {
+background-color: #4caf50;
+color: white;
+border: none;
+border-radius: 50px;
+padding: 12px 30px;
+font-size: 1.2rem;
+cursor: pointer;
+transition: all 0.3s;
+box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+button:hover {
+background-color: #388e3c;
+transform: translateY(-2px);
+box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+}
+
+button:active {
+transform: translateY(0);
+}
+
+#resetBtn {
+background-color: #f44336;
+}
+
+#resetBtn:hover {
+background-color: #d32f2f;
+}
+
+.message {
+font-size: 1.5rem;
+font-weight: bold;
+margin: 20px 0;
+min-height: 40px;
+padding: 10px;
+border-radius: 10px;
+transition: all 0.5s;
+}
+
+.success {
+color: #2e7d32;
+background-color: #c8e6c9;
+animation: celebrate 1s ease infinite;
+}
+
+.failure {
+color: #c62828;
+background-color: #ffcdd2;
+}
+
+@keyframes celebrate {
+0%, 100% { transform: scale(1); }
+50% { transform: scale(1.1); }
+}
+
+.part-image {
+max-width: 80px;
+max-height: 80px;
+}
+
+@media (max-width: 768px) {
+.game-area {
+flex-direction: column;
+}
+
+.target-grid {
+grid-template-columns: 1fr;
+}
+@
+
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>花朵结构解剖游戏</h1>
+
+<div class="instructions">
+<h2>游戏说明</h2>
+<p>将花朵的四个部分（雄蕊、雌蕊、花冠、花萼）拖拽到对应的名称格子中。全部正确即可获胜！</p>
+</div>
+
+<div class="game-area">
+<div class="flower-container">
+<h2>完整花朵</h2>
+<div class="flower-image" id="flowerImage">
+<!-- 花朵部件将通过JavaScript动态添加 -->
+</div>
+</div>
+
+<div class="target-container">
+<h2>将花朵部件拖到正确位置</h2>
+<div class="target-grid">
+<div class="target-cell" data-part="stamen">
+<h3>雄蕊</h3>
+</div>
+<div class="target-cell" data-part="pistil">
+<h3>雌蕊</h3>
+</div>
+<div class="target-cell" data-part="corolla">
+<h3>花冠</h3>
+</div>
+<div class="target-cell" data-part="calyx">
+<h3>花萼</h3>
+</div>
+</div>
+</div>
+</div>
+
+<div class="buttons">
+<button id="checkBtn">检查答案</button>
+<button id="resetBtn">重新开始</button>
+</div>
+
+<div class="message" id="message"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// 获取DOM元素
+const flowerImage = document.getElementById('flowerImage');
+const targetCells = document.querySelectorAll('.target-cell');
+const checkBtn = document.getElementById('checkBtn');
+const resetBtn = document.getElementById('resetBtn');
+const message = document.getElementById('message');
+
+// // 花朵部件数据
+// const flowerParts = [
+// { id: 'stamen', name: '雄蕊', color: '#ffeb3b', emoji: '🌼' },
+// { id: 'pistil', name: '雌蕊', color: '#ff9800', emoji: '🔸' },
+// { id: 'corolla', name: '花冠', color: '#e91e63', emoji: '🌸' },
+// { id: 'calyx', name: '花萼', color: '#4caf50', emoji: '🍃' }
+// ];
+
+// 花朵部件数据（更新后）
+const flowerParts = [
+  { 
+    id: 'stamen', 
+    name: '雄蕊', 
+    color: '#ffeb3b', 
+    image: 'image/雄蕊.JPG'  // 雄蕊图片路径
+  },
+  { 
+    id: 'pistil', 
+    name: '雌蕊', 
+    color: '#ff9800', 
+    image: 'image/雌蕊.JPG'  // 雌蕊图片路径
+  },
+  { 
+    id: 'corolla', 
+    name: '花冠', 
+    color: '#e91e63', 
+    image: 'image/花冠.JPG'  // 花冠图片路径
+  },
+  { 
+    id: 'calyx', 
+    name: '花萼', 
+    color: '#4caf50', 
+    image: 'image/花萼.JPG'  // 花萼图片路径
+  }
+];
+
+
+// 创建花朵部件
+function createFlowerParts() {
+flowerParts.forEach(part => {
+const partElement = document.createElement('div');
+partElement.className = 'flower-part';
+partElement.id = part.id;
+partElement.draggable = true;
+partElement.innerHTML = `
+<div style="background-color: ${part.color}; width: 90px; height: 90px; border-radius: 50%;
+display: flex; justify-content: center; align-items: center; font-size: 40px;">
+<!-- 图片标签：src指向图片路径，alt用于无障碍提示 -->
+        <img src="${part.image}" alt="${part.name}" style="max-width: 60px; max-height: 60px;">
+</div>
+
+`;
+// <p style="margin-top: 5px; font-weight: bold; color: #5d4037;">${part.name}</p>
+// <p style="margin-top: 5px; font-weight: bold; color: #5d4037;">${part.name}</p>
+// 随机位置
+const x = Math.random() * (flowerImage.offsetWidth - 100);
+const y = Math.random() * (flowerImage.offsetHeight - 100);
+partElement.style.left = `${x}px`;
+partElement.style.top = `${y}px`;
+
+// 添加拖拽事件
+partElement.addEventListener('dragstart', handleDragStart);
+
+flowerImage.appendChild(partElement);
+});
+}
+
+// 拖拽开始处理
+function handleDragStart(e) {
+e.dataTransfer.setData('text/plain', e.target.id);
+e.target.classList.add('dragging');
+}
+
+// 允许拖拽元素放置
+targetCells.forEach(cell => {
+cell.addEventListener('dragover', e => {
+e.preventDefault();
+});
+
+cell.addEventListener('dragenter', e => {
+e.preventDefault();
+cell.style.backgroundColor = '#e0e0e0';
+});
+
+cell.addEventListener('dragleave', () => {
+cell.style.backgroundColor = '#f9f9f9';
+});
+
+cell.addEventListener('drop', e => {
+e.preventDefault();
+cell.style.backgroundColor = '#f9f9f9';
+
+const id = e.dataTransfer.getData('text/plain');
+const draggable = document.getElementById(id);
+
+if (draggable) {
+// 检查是否正确
+const isCorrect = cell.dataset.part === id;
+
+// 清空目标单元格
+cell.innerHTML = `<h3>${cell.querySelector('h3').textContent}</h3>`;
+
+// 添加拖拽元素到目标单元格
+const clone = draggable.cloneNode(true);
+clone.classList.remove('dragging');
+clone.draggable = false;
+clone.style.position = 'static';
+clone.style.transform = 'none';
+clone.style.cursor = 'default';
+cell.appendChild(clone);
+
+// 隐藏原始元素
+draggable.style.display = 'none';
+
+// 标记正确或错误
+if (isCorrect) {
+cell.classList.add('correct');
+} else {
+cell.style.borderColor = '#f44336';
+}
+}
+});
+});
+
+// 检查答案
+checkBtn.addEventListener('click', function() {
+const correctCells = document.querySelectorAll('.target-cell.correct');
+
+if (correctCells.length === 4) {
+message.textContent = '太棒了！你正确地解剖了花朵！';
+message.className = 'message success';
+
+// 播放欢呼声
+playCheerSound();
+
+// 添加庆祝效果
+celebrate();
+} else {
+message.textContent = '还没有完全正确，再试一次吧！';
+message.className = 'message failure';
+}
+});
+
+// 重新开始游戏
+resetBtn.addEventListener('click', function() {
+// 清空消息
+message.textContent = '';
+message.className = 'message';
+
+// 重置目标单元格
+targetCells.forEach(cell => {
+cell.classList.remove('correct');
+cell.style.borderColor = '#bdbdbd';
+cell.style.backgroundColor = '#f9f9f9';
+cell.innerHTML = `<h3>${cell.dataset.part === 'stamen' ? '雄蕊' :
+cell.dataset.part === 'pistil' ? '雌蕊' :
+cell.dataset.part === 'corolla' ? '花冠' : '花萼'}</h3>`;
+});
+
+// 重新显示花朵部件
+flowerParts.forEach(part => {
+const partElement = document.getElementById(part.id);
+if (partElement) {
+partElement.style.display = 'block';
+
+// 随机位置
+const x = Math.random() * (flowerImage.offsetWidth - 100);
+const y = Math.random() * (flowerImage.offsetHeight - 100);
+partElement.style.left = `${x}px`;
+partElement.style.top = `${y}px`;
+}
+});
+});
+
+// 播放欢呼声
+function playCheerSound() {
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+// 创建喝彩声
+for (let i = 0; i < 5; i++) {
+setTimeout(() => {
+const oscillator = audioContext.createOscillator();
+const gainNode = audioContext.createGain();
+
+oscillator.connect(gainNode);
+gainNode.connect(audioContext.destination);
+
+oscillator.type = 'sine';
+oscillator.frequency.value = 400 + Math.random() * 800;
+
+gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+gainNode.gain.linearRampToValueAtTime(0.1, audioContext.currentTime + 0.01);
+gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
+
+oscillator.start(audioContext.currentTime);
+oscillator.stop(audioContext.currentTime + 0.5);
+}, i * 100);
+}
+}
+
+// 庆祝效果
+function celebrate() {
+for (let i = 0; i < 30; i++) {
+setTimeout(() => {
+const confetti = document.createElement('div');
+confetti.style.position = 'fixed';
+confetti.style.left = Math.random() * 100 + 'vw';
+confetti.style.top = '-20px';
+confetti.style.width = '15px';
+confetti.style.height = '15px';
+confetti.style.backgroundColor = getRandomColor();
+confetti.style.borderRadius = '50%';
+confetti.style.zIndex = '1000';
+confetti.style.animation = `fall ${1 + Math.random() * 2}s linear forwards`;
+
+document.body.appendChild(confetti);
+
+setTimeout(() => {
+confetti.remove();
+}, 3000);
+}, i * 100);
+}
+
+// 添加CSS动画
+const style = document.createElement('style');
+style.textContent = `
+@keyframes fall {
+to {
+transform: translateY(100vh) rotate(${360 + Math.random() * 360}deg);
+opacity: 0;
+}
+}
+`;
+document.head.appendChild(style);
+}
+
+// 获取随机颜色
+function getRandomColor() {
+const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// 初始化游戏
+createFlowerParts();
+});
+</script>
+</body>
+</html>
